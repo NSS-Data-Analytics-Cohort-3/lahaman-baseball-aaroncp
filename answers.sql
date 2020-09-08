@@ -130,3 +130,127 @@ inner join managers mnl
 inner join managers mal
 	on mal.playerid = al.playerid
 	and mal.yearid = al_yearid*/
+		
+--analyzing Tennessee pedigree in MLB
+--number of players in the MLB by school
+select schoolname, count(distinct p.playerid)
+from people p
+inner join collegeplaying cp
+	on p.playerid = cp.playerid
+inner join schools s
+	on cp.schoolid = s.schoolid
+where cp.schoolid in (select schoolid 
+						from schools
+						where schoolstate = 'TN')
+and p.playerid in (select playerid 
+						from collegeplaying cp
+					   	inner join schools s
+					   		on cp.schoolid = s.schoolid
+						where schoolstate = 'TN')
+group by schoolname
+order by count desc
+--average salary by school
+select sc.schoolname, round(cast(sum(sa.salary)/count(*) as decimal),2) as average_salary
+from (select p.playerid, cp.schoolid
+		from people p
+		inner join collegeplaying cp
+			on p.playerid = cp.playerid
+		where cp.schoolid in (select schoolid 
+								from schools
+								where schoolstate = 'TN')
+			and p.playerid in (select playerid 
+								from collegeplaying cp
+					   			inner join schools s
+					   				on cp.schoolid = s.schoolid
+								where schoolstate = 'TN')
+group by p.playerid, cp.schoolid) as sq
+inner join salaries sa
+	on sa.playerid = sq.playerid
+inner join schools sc
+	on sq.schoolid = sc.schoolid
+group by sc.schoolname
+order by average_salary desc
+--career earning average by school
+select sc.schoolname, round(cast(sum(sa.salary)/count(distinct sq.playerid) as decimal),2) as average_career_earnings
+from (select p.playerid, cp.schoolid
+		from people p
+		inner join collegeplaying cp
+			on p.playerid = cp.playerid
+		where cp.schoolid in (select schoolid 
+								from schools
+								where schoolstate = 'TN')
+			and p.playerid in (select playerid 
+								from collegeplaying cp
+					   			inner join schools s
+					   				on cp.schoolid = s.schoolid
+								where schoolstate = 'TN')
+group by p.playerid, cp.schoolid) as sq
+inner join salaries sa
+	on sa.playerid = sq.playerid
+inner join schools sc
+	on sq.schoolid = sc.schoolid
+group by sc.schoolname
+order by average_career_earnings desc
+--highest average salary by TN players
+select concat(p.namefirst, ' ', p.namelast) as fullname, sc.schoolname, round(cast(sum(sa.salary)/count(*) as decimal),2) as average_salary
+from (select p.playerid, cp.schoolid
+		from people p
+		inner join collegeplaying cp
+			on p.playerid = cp.playerid
+		where cp.schoolid in (select schoolid 
+								from schools
+								where schoolstate = 'TN')
+			and p.playerid in (select playerid 
+								from collegeplaying cp
+					   			inner join schools s
+					   				on cp.schoolid = s.schoolid
+								where schoolstate = 'TN')
+group by p.playerid, cp.schoolid) as sq
+inner join salaries sa
+	on sa.playerid = sq.playerid
+inner join schools sc
+	on sq.schoolid = sc.schoolid
+inner join people p
+	on sq.playerid = p.playerid
+group by concat(p.namefirst, ' ', p.namelast), sc.schoolname
+order by average_salary desc
+--highest average career earnings by TN player
+select sc.schoolname, concat(p.namefirst, ' ', p.namelast) as fullname, sum(sa.salary) as full_career_earnings
+from (select p.playerid, cp.schoolid
+		from people p
+		inner join collegeplaying cp
+			on p.playerid = cp.playerid
+		where cp.schoolid in (select schoolid 
+								from schools
+								where schoolstate = 'TN')
+			and p.playerid in (select playerid 
+								from collegeplaying cp
+					   			inner join schools s
+					   				on cp.schoolid = s.schoolid
+								where schoolstate = 'TN')
+group by p.playerid, cp.schoolid) as sq
+inner join salaries sa
+	on sa.playerid = sq.playerid
+inner join schools sc
+	on sq.schoolid = sc.schoolid
+inner join people p
+	on sq.playerid = p.playerid
+group by concat(p.namefirst, ' ', p.namelast), sc.schoolname
+order by full_career_earnings desc
+--number of games
+
+--WS that a TN player participated in (unfinished)
+select t.teamid, t.yearid, a.playerid
+	from people p
+	inner join appearances a
+		on a.playerid = p.playerid
+	inner join teams t
+		on t.teamid = a.teamid
+where WSWin = 'Y'
+and p.playerid in (select playerid 
+								from collegeplaying cp
+					   			inner join schools s
+					   				on cp.schoolid = s.schoolid
+								where schoolstate = 'TN')				
+
+select min(yearid) from salaries
